@@ -1,0 +1,9 @@
+{
+  "AirlineID": {
+    "length": 3,
+    "doc": "Human readable description of the element, in **markdown**.",
+    "key": true,
+    "notNull": true,
+    "type": "cds.String"
+  }
+}

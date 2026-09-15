@@ -1,0 +1,19 @@
+{
+  "name": "Example Ruleset",
+  "version": "0.1",
+  "created_at": "2026-09-11T00:00:00Z",
+  "description": "Example CSN rules",
+  "csn": {
+    "options": {
+      "preserve_types": false,
+      "preserve_associations": false
+    },
+    "preserve": [
+      "@PersonalData.*",
+      "@EndUserText.label",
+      "@ObjectModel.modelingPattern",
+      "@Semantics.amount.currencyCode",
+      "@Semantics.quantity.unitOfMeasure"
+    ]
+  }
+}

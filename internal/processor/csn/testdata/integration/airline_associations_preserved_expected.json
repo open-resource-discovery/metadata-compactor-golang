@@ -1,0 +1,23 @@
+{
+  "to_CountryCode": {
+    "on": [
+      {
+        "ref": [
+          "to_CountryCode",
+          "code"
+        ]
+      },
+      "=",
+      {
+        "ref": [
+          "CountryCode_code"
+        ]
+      }
+    ],
+    "type": "cds.Association",
+    "target": "AirlineService.Countries",
+    "cardinality": {
+      "max": 1
+    }
+  }
+}

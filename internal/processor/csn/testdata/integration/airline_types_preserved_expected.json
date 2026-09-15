@@ -1,0 +1,14 @@
+{
+  "AirlineID": {
+    "doc": "Human readable description of the element, in **markdown**.",
+    "key": true,
+    "notNull": true,
+    "type": "AirlineUuid"
+  },
+  "AirlineUuid": {
+    "length": 3,
+    "kind": "type",
+    "doc": "Description of the reuse type",
+    "type": "cds.String"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "version": "test",
+  "created_at": "2026-09-16T00:00:00Z",
+  "description": "Retain custom type definitions.",
+  "csn": {
+    "options": {
+      "preserve_types": true
+    },
+    "preserve": []
+  }
+}

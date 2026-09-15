@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/open-resource-discovery/metadata-compactor-golang/resources/schemas/ruleset.schema.json",
+  "title": "Metadata filtering ruleset",
+  "description": "A versioned set of metadata-filtering rules organized by document format.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "version",
+    "created_at",
+    "description",
+    "csn"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Ruleset name."
+    },
+    "version": {
+      "type": "string",
+      "description": "Ruleset version."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Ruleset creation time in RFC 3339 format."
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of this ruleset."
+    },
+    "csn": {
+      "type": "object",
+      "description": "CSN compaction rules.",
+      "additionalProperties": false,
+      "required": [
+        "options",
+        "preserve"
+      ],
+      "properties": {
+        "options": {
+          "type": "object",
+          "description": "CSN compaction options.",
+          "additionalProperties": false,
+          "required": [
+            "preserve_types",
+            "preserve_associations"
+          ],
+          "properties": {
+            "preserve_types": {
+              "type": "boolean",
+              "description": "Whether custom type definitions are retained."
+            },
+            "preserve_associations": {
+              "type": "boolean",
+              "description": "Whether association elements are retained."
+            }
+          }
+        },
+        "preserve": {
+          "type": "array",
+          "description": "Annotation and private-property allowlist. A trailing `.*` makes a rule a glob; all other values are exact rules.",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

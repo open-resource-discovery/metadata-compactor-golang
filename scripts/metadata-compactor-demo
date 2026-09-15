@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+
+readonly PROJECT_ROOT="$(realpath "$(dirname "${0}")/..")"
+
+function _info() {
+  echo -e "[INFO] ${1}"
+}
+
+function _error() {
+  echo -e "\033[31m[ERR] ${1}\033[0m"
+}
+
+function _read_cmd_arg() {
+  local option="${1}"; shift
+  local default="${1}"; shift
+  local previous current
+
+  for current in "${@}"; do
+    if [[ "${current}" =~ ^-{1,2}${option}=(.+)$ ]]; then
+      echo "${BASH_REMATCH[1]}"
+      return 0
+    elif [[ "${previous}" =~ ^-{1,2}${option}$ ]]; then
+      echo "${current}"
+      return 0
+    fi
+
+    previous="${current}"
+  done
+
+  echo "${default}"
+}
+
+function _assert_success() {
+  local work_dir="${1}"; shift
+  local command="${1}"; shift
+  local exit_code
+
+  # shellcheck disable=SC2164
+  pushd "${work_dir}" > /dev/null 2>&1
+
+  "${command}" "${@}"; exit_code="${?}"
+
+  # shellcheck disable=SC2164
+  popd > /dev/null 2>&1
+
+  if [[ "${exit_code}" -ne "0" ]]; then
+    _error "Execution of command ${command} failed with code ${exit_code}"
+    _error "Execution callstack (subshell: ${BASH_SUBSHELL}):"
+    for ((index = 0; index < "${#FUNCNAME[@]}" - 1; index++)); do
+      _error "    ${FUNCNAME[${index}]} (invoked at line: ${BASH_LINENO[${index}]})"
+    done
+
+    exit "${exit_code}"
+  fi
+}
+
+function _install_golang() {
+  if [[ -z "$(go version 2> /dev/null)" ]]; then
+    _info "Golang installation not found. Installing..."
+    _assert_success "${PROJECT_ROOT}" brew install go
+  else
+    _info "Using installed Golang v$(go version | awk '{print $3}' | sed 's/go//')..."
+  fi
+}
+
+function _run_cli() {
+  local rules="${1}"; shift
+  local input="${1}"; shift
+  local output="${1}"; shift
+
+  _info "Invoking Metadata Compactor CLI module..."
+  _assert_success "${PROJECT_ROOT}" 'go' 'run' 'cmd/metadata-compactor/main.go' '-r' "${rules}" '-i' "${input}" '-o' "${output}"
+}
+
+function main() {
+  local input="$(_read_cmd_arg 'input' './resources/examples/airline.csn.json' "${@}")"
+  local rules="$(_read_cmd_arg 'rules' './resources/examples/rules.json' "${@}")"
+  local output="$(_read_cmd_arg 'output' './resources/examples/airline-compacted.csn.json' "${@}")"
+
+  _install_golang
+  _run_cli "${rules}" "${input}" "${output}"
+
+  diff --color <(jq --sort-keys . "${input}") <(jq --sort-keys . "${output}")
+}
+
+main "${@}"
