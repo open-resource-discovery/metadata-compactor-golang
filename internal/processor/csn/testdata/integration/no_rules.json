@@ -1,0 +1,9 @@
+{
+  "version": "test",
+  "created_at": "2026-09-16T00:00:00Z",
+  "description": "No annotations or private properties are retained.",
+  "csn": {
+    "options": {},
+    "preserve": []
+  }
+}

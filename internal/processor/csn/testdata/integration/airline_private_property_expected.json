@@ -1,0 +1,41 @@
+{
+  "AirlineService": {
+    "kind": "service",
+    "doc": "This is describing the service that exposes the CDS entities through an API.",
+    "__private": "retain when explicitly allowed"
+  },
+  "AirlineService.Airline": {
+    "__private": "retain when explicitly allowed",
+    "elements": {
+      "AirlineID": {
+        "doc": "Human readable description of the element, in **markdown**.",
+        "key": true,
+        "notNull": true,
+        "type": "cds.String",
+        "length": 3,
+        "__private": "retain when explicitly allowed"
+      },
+      "Name": {
+        "length": 40,
+        "notNull": true,
+        "type": "cds.String"
+      },
+      "CurrencyCode_code": {
+        "type": "cds.String",
+        "length": 3
+      }
+    },
+    "kind": "entity",
+    "doc": "Human readable description of the entity, in **markdown**."
+  },
+  "UnassignedEntity": {
+    "kind": "entity",
+    "doc": "This entity is not prefixed with the service name and therefore not accessible through the service.",
+    "elements": {
+      "SomeElement": {
+        "key": true,
+        "type": "cds.String"
+      }
+    }
+  }
+}
