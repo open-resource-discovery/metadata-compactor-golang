@@ -52,7 +52,7 @@ go get github.com/open-resource-discovery/metadata-compactor-golang
 Build the command-line tool from the repository root:
 
 ```sh
-go build -o metadata-compactor ./cmd
+go build -o metadata-compactor ./cmd/metadata-compactor
 ```
 
 This creates a `metadata-compactor` executable in the current directory.
