@@ -51,8 +51,11 @@ func options(args []string, stderr io.Writer) (CommandLine, error) {
 	flags := flag.NewFlagSet("metadata-filtering", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	flags.StringVar(&result.Input, "i", "", "path to the CSN JSON file to filter (required)")
+	flags.StringVar(&result.Input, "input", "", "path to the CSN JSON file to filter (required)")
 	flags.StringVar(&result.Rules, "r", "", "path to the JSON filtering rules file (required)")
+	flags.StringVar(&result.Rules, "rules", "", "path to the JSON filtering rules file (required)")
 	flags.StringVar(&result.Out, "o", "", "path for filtered CSN output (default: stdout)")
+	flags.StringVar(&result.Out, "output", "", "path for filtered CSN output (default: stdout)")
 
 	flags.Usage = func() {
 		fmt.Fprintf(flags.Output(), "Usage: %s -i <input.json> -r <rules.json> [-o <output.json>]\n", flags.Name())

@@ -4,7 +4,7 @@
 
 # Metadata Compactor Golang Library
 
-Compact [Core Schema Notation](https://sap.github.io/csn-interop-specification/) JSON documents for AI friendly metadata exposure. The tool can remove annotations and private properties based on explicit rulesets, resolve selected attributes from custom types onto their elements, and remove custom type definitions.
+Compact [Core Schema Notation](https://sap.github.io/csn-interop-specification/) JSON documents for AI-friendly metadata exposure. Rulesets control which annotations and private properties remain, and whether custom types and association elements are preserved.
 
 ```mermaid
 flowchart TD
@@ -72,7 +72,7 @@ metadata-compactor -i <input.json> -r <rules.json> [-o <output.json>]
 For example, write the compacted document to a file:
 
 ```sh
-./metadata-compactor -i resources/examples/airline.csn.json -r resources/examples/rules.json -o compacted.airline.csn.json
+./metadata-compactor -i input.airline.csn.json -r rules.json -o compacted.airline.csn.json
 ```
 
 Or send it directly to another command:
@@ -99,42 +99,57 @@ go test -tags unit ./...
 go test -tags integration ./...
 
 # Run unit and integration tests together
-go vet -tags unit,integration ./...
+go test -tags unit,integration ./...
 ```
 
 ## Rules file
 
-The rules file is a versioned CSN annotation allowlist. Its structure is defined by [the JSON Schema](resources/schemas/ruleset.schema.json).
+The rules file is a versioned CSN compaction configuration. Its structure is defined by [the JSON Schema](resources/schemas/ruleset.schema.json).
 
 ```json
 {
+  "name": "Example Ruleset",
   "version": "0.1",
   "created_at": "2026-09-11T00:00:00Z",
   "description": "Example CSN rules",
-  "csn": [
-    "@EndUserText.label",
-    "@PersonalData.*"
-  ]
+  "csn": {
+    "options": {
+      "preserve_types": false,
+      "preserve_associations": false
+    },
+    "preserve": [
+      "@EndUserText.label",
+      "@PersonalData.*",
+      "__private"
+    ]
+  }
 }
 ```
 
-Each CSN rule is a string:
+`csn.preserve` is an allowlist. Each entry is a string:
 
 - An annotation / private property name retains only that exact element.
 - A trailing `.*` retains an annotation / private property namespace and its children, such as `@PersonalData.*`.
 
-Empty or omitted `csn` entries mean all annotations / private properties are removed.
+An empty `preserve` list removes all annotations and private properties.
+
+`csn.options` controls structural compaction:
+
+- `preserve_types`: when `true`, retain custom `kind: "type"` definitions and leave element type references unchanged. When `false`, referenced custom-type attributes are resolved onto entity elements and type definitions are removed.
+- `preserve_associations`: when `true`, retain elements whose type is `cds.Association`. When `false`, remove those elements.
+
+Both options default to `false` when omitted by the Go JSON decoder; include them explicitly in rules files to conform to the JSON Schema.
 
 ## Compaction behavior
 
-For every CSN `context`, `service`, and `entity` definition, the processor:
+The processor:
 
-1. Removes annotations and private properties that are not explicitly allowed via a rule.
-2. Applies the same procedure to entity elements.
-3. Resolves supported attributes from referenced custom types onto entity elements.
-4. Removes custom type definitions (`kind: "type"`) from the final document.
+1. Removes annotations and private properties not present in `csn.preserve` from `context`, `service`, `entity`, and `type` definitions.
+2. Applies the same pruning to entity elements.
+3. Removes association elements unless `preserve_associations` is enabled.
+4. Resolves supported attributes from referenced custom types and removes their definitions unless `preserve_types` is enabled.
 
-The original input is never modified; the command emits a compacted CSN JSON document with two-space indentation.
+The original input is never modified; the command writes a compacted JSON document to standard output or the path supplied with `-o`.
 
 ## Support, Feedback, Contributing
 
