@@ -1,0 +1,17 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":pinVersions"
+  ],
+  "semanticCommits": "enabled",
+  "branchPrefix": "deps/",
+  "timezone": "Europe/Berlin",
+  "schedule": [
+    "every weekend"
+  ],
+  "updateNotScheduled": false,
+  "prConcurrentLimit": 0,
+  "prHourlyLimit": 0,
+  "useBaseBranchConfig": "merge"
+}
