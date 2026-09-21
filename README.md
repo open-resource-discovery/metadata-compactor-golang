@@ -4,7 +4,9 @@
 
 # Metadata Compactor Golang Library
 
-Compact [Core Schema Notation](https://sap.github.io/csn-interop-specification/) JSON documents for AI-friendly metadata exposure. Rulesets control which annotations and private properties remain, and whether custom types and association elements are preserved.
+Compact metadata documents for AI-friendly exposure. The library is designed to support multiple document formats; [Core Schema Notation](https://sap.github.io/csn-interop-specification/) (CSN) JSON is currently supported, with additional formats planned.
+
+For CSN documents, rulesets control which annotations and private properties remain, and whether custom types and association elements are preserved.
 
 ```mermaid
 flowchart TD
@@ -57,7 +59,7 @@ go build -o metadata-compactor ./cmd/metadata-compactor
 
 This creates a `metadata-compactor` executable in the current directory.
 
-## Usage
+## CSN usage
 
 ```text
 metadata-compactor -i <input.json> -r <rules.json> [-o <output.json>]
@@ -140,7 +142,7 @@ An empty `preserve` list removes all annotations and private properties.
 
 Both options default to `false` when omitted by the Go JSON decoder; include them explicitly in rules files to conform to the JSON Schema.
 
-## Compaction behavior
+## CSN compaction behavior
 
 The processor:
 
