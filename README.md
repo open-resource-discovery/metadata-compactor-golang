@@ -6,7 +6,7 @@
 
 Compact metadata documents for AI-friendly exposure. The library is designed to support multiple document formats; [Core Schema Notation](https://sap.github.io/csn-interop-specification/) (CSN) JSON is currently supported, with additional formats planned.
 
-For CSN documents, rulesets control which annotations and private properties remain, and whether custom types and association elements are preserved.
+For CSN documents, rulesets and optional baseline documents control which annotations and private properties remain, and whether custom types and association elements are preserved.
 
 ```mermaid
 flowchart TD
@@ -62,14 +62,15 @@ This creates a `metadata-compactor` executable in the current directory.
 ## CSN usage
 
 ```text
-metadata-compactor -i <input.json> -r <rules.json> [-o <output.json>]
+metadata-compactor -i <input.json> -r <rules.json> [-b <baseline.json>] [-o <output.json>]
 ```
 
-| Flag | Required | Description                                                                         |
-| --- | --- |-------------------------------------------------------------------------------------|
-| `-i` | Yes | Path to the CSN JSON document to compact.                                           |
-| `-r` | Yes | Path to the JSON rules file.                                                        |
-| `-o` | No | Path for the compacted CSN. When omitted, the result is written to standard output. |
+| Flag | Required | Description |
+| --- | --- | --- |
+| `-i`, `--input` | Yes | Path to the CSN JSON document to compact. |
+| `-r`, `--rules` | Yes | Path to the JSON rules file. |
+| `-b`, `--baseline` | No | Path to a baseline CSN document from which path-specific preservation rules are derived. |
+| `-o`, `--output` | No | Path for the compacted CSN. When omitted, the result is written to standard output. |
 
 For example, write the compacted document to a file:
 
@@ -81,6 +82,42 @@ Or send it directly to another command:
 
 ```sh
 ./metadata-compactor -i input.airline.csn.json -r rules.json | jq .
+```
+
+### Baseline-derived rules
+
+A baseline is an existing CSN document whose annotations and private properties should continue to appear at the same locations in a newly compacted document. Supply it with `-b` or `--baseline`:
+
+```sh
+./metadata-compactor \
+  -i current.airline.csn.json \
+  -r rules.json \
+  -b previous.airline.csn.json \
+  -o compacted.airline.csn.json
+```
+
+For every annotation or private property in the baseline, the processor derives an exact rule containing both its name and its path. For example, this baseline fragment preserves `@EndUserText.label` only on `AirlineService.Airline`:
+
+```json
+{
+  "definitions": {
+    "AirlineService.Airline": {
+      "kind": "entity",
+      "@EndUserText.label": "Airline",
+      "elements": {}
+    }
+  }
+}
+```
+
+The same annotation on another definition or element is not preserved unless it is also present at that path in the baseline or is allowed by `csn.preserve`. Baseline-derived rules are combined with the configured ruleset; they do not replace it.
+
+Only the presence and path of a property in the baseline matter. The processor does not copy properties or values from the baseline—it retains the corresponding property and its current value when that property exists in the input document. Structural options still apply, so type definitions and associations are removed unless their respective preservation options are enabled.
+
+The Go API accepts multiple baseline documents and combines the rules derived from all of them:
+
+```go
+result := processor.Process(metadatafiltering.CSN, input, baselineA, baselineB)
 ```
 
 ### Running the tests
@@ -146,10 +183,12 @@ Both options default to `false` when omitted by the Go JSON decoder; include the
 
 The processor:
 
-1. Removes annotations and private properties not present in `csn.preserve` from `context`, `service`, `entity`, and `type` definitions.
-2. Applies the same pruning to entity elements.
-3. Removes association elements unless `preserve_associations` is enabled.
-4. Resolves supported attributes from referenced custom types and removes their definitions unless `preserve_types` is enabled.
+1. Derives exact, path-specific rules from any supplied baseline documents.
+2. Combines baseline-derived rules with the global `csn.preserve` allowlist.
+3. Removes annotations and private properties not selected by either source from `context`, `service`, `entity`, and `type` definitions.
+4. Applies the same pruning to entity elements.
+5. Removes association elements unless `preserve_associations` is enabled.
+6. Resolves supported attributes from referenced custom types and removes their definitions unless `preserve_types` is enabled.
 
 The original input is never modified; the command writes a compacted JSON document to standard output or the path supplied with `-o`.
 

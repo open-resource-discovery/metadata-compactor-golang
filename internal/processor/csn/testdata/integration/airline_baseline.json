@@ -1,0 +1,18 @@
+{
+  "definitions": {
+    "AirlineService": {
+      "kind": "service",
+      "__private": true
+    },
+    "AirlineService.Airline": {
+      "kind": "entity",
+      "@ObjectModel.modelingPattern": true,
+      "elements": {
+        "AirlineID": {
+          "@EndUserText.label": true,
+          "__private": true
+        }
+      }
+    }
+  }
+}

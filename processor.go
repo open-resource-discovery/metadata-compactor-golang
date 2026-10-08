@@ -17,10 +17,10 @@ type Processor struct {
 	csn *csn.CSNProcessor
 }
 
-func (self *Processor) Process(format Format, document string) string {
+func (self *Processor) Process(format Format, document string, baseline ...string) string {
 	switch format {
 	case CSN:
-		return self.csn.Process(document)
+		return self.csn.Process(document, baseline...)
 	default:
 		panic(fmt.Sprintf("Unsupported format: %+v", format))
 	}
