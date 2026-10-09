@@ -55,6 +55,21 @@ func TestProcessorProcessCSN(t *testing.T) {
 	}
 }
 
+func TestProcessorProcessCSNWithBaseline(t *testing.T) {
+	processor := Create(&model.Ruleset{})
+	input := `{"definitions":{"Entity":{"kind":"entity","@Keep":true,"@Remove":true,"elements":{}}}}`
+	baseline := `{"definitions":{"Entity":{"kind":"entity","@Keep":true}}}`
+
+	result := oj.MustParseString(processor.Process(CSN, input, baseline)).(map[string]any)
+	entity := result["definitions"].(map[string]any)["Entity"].(map[string]any)
+	if _, exists := entity["@Keep"]; !exists {
+		t.Error("baseline annotation was removed")
+	}
+	if _, exists := entity["@Remove"]; exists {
+		t.Error("annotation absent from baseline was retained")
+	}
+}
+
 func TestProcessorProcessPanicsForUnsupportedFormat(t *testing.T) {
 	processor := Create(&model.Ruleset{})
 

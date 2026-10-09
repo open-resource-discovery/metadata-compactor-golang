@@ -5,6 +5,9 @@ package model
 import (
 	"encoding/json"
 	"testing"
+
+	"github.com/open-resource-discovery/metadata-compactor-golang/internal/common/jputils"
+	"github.com/open-resource-discovery/metadata-compactor-golang/internal/common/testutils"
 )
 
 func TestCSNRuleMatches(t *testing.T) {
@@ -23,10 +26,21 @@ func TestCSNRuleMatches(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := tc.rule.Matches(tc.value); got != tc.want {
+			if got := tc.rule.Matches(jputils.Expr("$"), tc.value); got != tc.want {
 				t.Errorf("Matches(%q) = %v, want %v", tc.value, got, tc.want)
 			}
 		})
+	}
+}
+
+func TestCSNRuleMatchesPath(t *testing.T) {
+	rule := CSNRule{Kind: "exact", Value: "@Keep", Path: "$.definitions.Entity['@Keep']"}
+
+	if !rule.Matches(jputils.Expr("$", "definitions", "Entity", "@Keep"), "@Keep") {
+		t.Error("path-specific rule did not match its configured path")
+	}
+	if rule.Matches(jputils.Expr("$", "definitions", "Other", "@Keep"), "@Keep") {
+		t.Error("path-specific rule matched a different path")
 	}
 }
 
@@ -55,9 +69,8 @@ func TestCSNRuleUnmarshalJSON(t *testing.T) {
 			if err != nil {
 				t.Fatalf("json.Unmarshal() returned an error: %v", err)
 			}
-			if rule != tc.want {
-				t.Errorf("json.Unmarshal() = %#v, want %#v", rule, tc.want)
-			}
+
+			testutils.AssertDeepEquals(t, tc.want, rule)
 		})
 	}
 }

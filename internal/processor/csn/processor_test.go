@@ -164,6 +164,63 @@ func TestCSNProcessorBranchCases(t *testing.T) {
 	})
 }
 
+func TestCSNProcessorBaselines(t *testing.T) {
+	t.Run("preserves only properties at matching baseline paths", func(t *testing.T) {
+		input := `{
+			"definitions": {
+				"Context": {"kind": "context", "@baseline": true, "@rule": true, "@remove": true},
+				"Service": {"kind": "service", "@baseline": true, "@remove": true},
+				"Type": {"kind": "type", "type": "cds.String", "__baseline": true, "@remove": true},
+				"Entity": {
+					"kind": "entity",
+					"@baseline": true,
+					"@remove": true,
+					"elements": {
+						"selected": {"type": "cds.String", "@baseline": true, "@remove": true},
+						"other": {"type": "cds.String", "@baseline": true, "@rule": true}
+					}
+				},
+				"OtherEntity": {"kind": "entity", "@baseline": true, "elements": {}}
+			}
+		}`
+		baseline := `{
+			"definitions": {
+				"Context": {"kind": "context", "@baseline": false},
+				"Service": {"kind": "service", "@baseline": false},
+				"Type": {"kind": "type", "__baseline": false},
+				"Entity": {"kind": "entity", "@baseline": false, "elements": {
+					"selected": {"type": "cds.String", "@baseline": false}
+				}}
+			}
+		}`
+
+		processor := CreateProcessor(
+			model.CSNOptions{PreserveTypes: true, PreserveAssociations: true},
+			[]model.CSNRule{{Kind: "exact", Value: "@rule"}},
+		)
+		definitions := oj.MustParseString(processor.Process(input, baseline)).(map[string]any)["definitions"].(map[string]any)
+
+		assertKeys(t, definitions["Context"].(map[string]any), "kind", "@baseline", "@rule")
+		assertKeys(t, definitions["Service"].(map[string]any), "kind", "@baseline")
+		assertKeys(t, definitions["Type"].(map[string]any), "kind", "type", "__baseline")
+		entity := definitions["Entity"].(map[string]any)
+		assertKeys(t, entity, "kind", "@baseline", "elements")
+		assertKeys(t, definitions["OtherEntity"].(map[string]any), "kind", "elements")
+		elements := entity["elements"].(map[string]any)
+		assertKeys(t, elements["selected"].(map[string]any), "type", "@baseline")
+		assertKeys(t, elements["other"].(map[string]any), "type", "@rule")
+	})
+
+	t.Run("combines multiple baselines", func(t *testing.T) {
+		input := `{"definitions":{"Entity":{"kind":"entity","@one":true,"@two":true,"@remove":true,"elements":{}}}}`
+		first := `{"definitions":{"Entity":{"kind":"entity","@one":true}}}`
+		second := `{"definitions":{"Entity":{"kind":"entity","@two":true}}}`
+
+		definitions := oj.MustParseString(CreateProcessor(model.CSNOptions{}, nil).Process(input, first, second)).(map[string]any)["definitions"].(map[string]any)
+		assertKeys(t, definitions["Entity"].(map[string]any), "kind", "@one", "@two", "elements")
+	})
+}
+
 func TestCSNProcessorOptions(t *testing.T) {
 	tests := []struct {
 		name                  string
@@ -193,7 +250,8 @@ func TestCSNProcessorOptions(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			definitions := oj.MustParseString(CreateProcessor(tc.options, []model.CSNRule{{Kind: "exact", Value: "@Keep"}}).Process(document)).(map[string]any)["definitions"].(map[string]any)
+			processor := CreateProcessor(tc.options, []model.CSNRule{{Kind: "exact", Value: "@Keep"}})
+			definitions := oj.MustParseString(processor.Process(document)).(map[string]any)["definitions"].(map[string]any)
 			typeDefinition, hasTypeDefinition := definitions["CustomType"]
 			if hasTypeDefinition != tc.wantTypeDefinition {
 				t.Errorf("custom type definition present = %v, want %v", hasTypeDefinition, tc.wantTypeDefinition)

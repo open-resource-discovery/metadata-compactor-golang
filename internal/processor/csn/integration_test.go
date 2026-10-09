@@ -88,6 +88,37 @@ func TestIntegrationCSNProcessorPreserveTypesOption(t *testing.T) {
 	}
 }
 
+func TestIntegrationCSNProcessorBaselineRules(t *testing.T) {
+	rules := loadRuleset(t, "testdata/integration/no_rules.json")
+	input := testutils.LoadFixture("testdata/airline.csn.json")
+	baseline := testutils.LoadFixture("testdata/integration/airline_baseline.json")
+
+	document := oj.MustParseString(CreateProcessor(rules.CSN.Options, rules.CSN.Rules).Process(input, baseline)).(map[string]any)
+	service := testutils.Get(t, document, "definitions", "AirlineService").(map[string]any)
+	airline := testutils.Get(t, document, "definitions", "AirlineService.Airline").(map[string]any)
+	airlineID := testutils.Get(t, airline, "elements", "AirlineID").(map[string]any)
+	airportID := testutils.Get(t, document, "definitions", "AirlineService.Airport", "elements", "AirportID").(map[string]any)
+
+	if got := service["__private"]; got != "retain when explicitly allowed" {
+		t.Errorf("service __private = %v, want baseline-selected value", got)
+	}
+	if _, exists := airline["@ObjectModel.modelingPattern"]; !exists {
+		t.Error("baseline-selected entity annotation was removed")
+	}
+	if _, exists := airline["@EndUserText.label"]; exists {
+		t.Error("entity annotation absent from baseline was retained")
+	}
+	if _, exists := airlineID["@EndUserText.label"]; !exists {
+		t.Error("baseline-selected element annotation was removed")
+	}
+	if _, exists := airlineID["__private"]; !exists {
+		t.Error("baseline-selected element private property was removed")
+	}
+	if _, exists := airportID["@EndUserText.label"]; exists {
+		t.Error("element annotation leaked to the same key at another path")
+	}
+}
+
 func airlineTypeDefinition(t *testing.T, document map[string]any) map[string]any {
 	t.Helper()
 	definitions := testutils.Get(t, document, "definitions").(map[string]any)
