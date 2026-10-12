@@ -9,7 +9,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [unreleased]
 
 ## [[0.0.2](https://github.com/open-resource-discovery/metadata-compactor-golang/releases/tag/v0.0.2)] - 2026-10-12
-This release includes the changes below.
+- feat: Allow for baseline rule derivation by @mlakov
 
 ## [[0.0.1](https://github.com/open-resource-discovery/metadata-compactor-golang/releases/tag/v0.0.1)] - 2026-09-17
 
