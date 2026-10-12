@@ -13,9 +13,14 @@ import (
 )
 
 type CommandLine struct {
-	Input string
-	Rules string
-	Out   string
+	Input    string
+	Rules    string
+	Out      string
+	Baseline string
+}
+
+func load(path string) string {
+	return string(must(os.ReadFile(path)))
 }
 
 func must[E any](value E, err error) E {
@@ -39,6 +44,15 @@ func output(options CommandLine) io.Writer {
 	return must(os.Create(options.Out))
 }
 
+func baselines(options CommandLine) []string {
+	if options.Baseline == "" {
+		return []string{}
+	}
+
+	return []string{load(options.Baseline)}
+
+}
+
 func rules(path string, result *model.Ruleset) *model.Ruleset {
 	must("", json.Unmarshal(must(os.ReadFile(path)), result))
 
@@ -56,9 +70,11 @@ func options(args []string, stderr io.Writer) (CommandLine, error) {
 	flags.StringVar(&result.Rules, "rules", "", "path to the JSON filtering rules file (required)")
 	flags.StringVar(&result.Out, "o", "", "path for filtered CSN output (default: stdout)")
 	flags.StringVar(&result.Out, "output", "", "path for filtered CSN output (default: stdout)")
+	flags.StringVar(&result.Baseline, "b", "", "TODO - TBD")
+	flags.StringVar(&result.Baseline, "baseline", "", "TODO - TBD")
 
 	flags.Usage = func() {
-		fmt.Fprintf(flags.Output(), "Usage: %s -i <input.json> -r <rules.json> [-o <output.json>]\n", flags.Name())
+		fmt.Fprintf(flags.Output(), "Usage: %s -i <input.json> -r <rules.json> [-o <output.json>]  [-b <baseline.json>]\n", flags.Name())
 		flags.PrintDefaults()
 	}
 
@@ -78,15 +94,12 @@ func options(args []string, stderr io.Writer) (CommandLine, error) {
 	return result, nil
 }
 
-func processor(options CommandLine) *metadatafiltering.Processor {
-	return metadatafiltering.Create(rules(options.Rules, &model.Ruleset{}))
-}
-
 func main() {
 	options := must(options(os.Args[1:], os.Stderr))
 
 	write(
 		output(options),
-		processor(options).Process(metadatafiltering.CSN, string(must(os.ReadFile(options.Input)))),
+		metadatafiltering.Create(rules(options.Rules, &model.Ruleset{})).
+			Process(metadatafiltering.CSN, load(options.Input), baselines(options)...),
 	)
 }
