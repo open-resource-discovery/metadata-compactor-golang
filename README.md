@@ -117,7 +117,7 @@ Only the presence and path of a property in the baseline matter. The processor d
 The Go API accepts multiple baseline documents and combines the rules derived from all of them:
 
 ```go
-result := processor.Process(metadatafiltering.CSN, input, baselineA, baselineB)
+result := processor.Process(metadata_compactor_golang.CSN, input, baselineA, baselineB)
 ```
 
 ### Running the tests
