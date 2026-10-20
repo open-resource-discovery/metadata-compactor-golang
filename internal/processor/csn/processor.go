@@ -8,7 +8,7 @@ import (
 	"github.com/ohler55/ojg/oj"
 	"github.com/open-resource-discovery/metadata-compactor-golang/internal/common/jputils"
 	"github.com/open-resource-discovery/metadata-compactor-golang/internal/common/utils"
-	"github.com/open-resource-discovery/metadata-compactor-golang/model"
+	"github.com/open-resource-discovery/metadata-compactor-golang/model/csn"
 )
 
 func removeAssociationsPostprocessor(document map[string]any) {
@@ -52,15 +52,15 @@ func resolveTypeDefinitionsPostprocessor(document map[string]any) {
 }
 
 type CSNProcessor struct {
-	rules          []model.CSNRule
-	options        model.CSNOptions
+	rules          []csn.CSNRule
+	options        csn.CSNOptions
 	targets        []jp.Expr
 	postprocessors []func(map[string]any)
 }
 
-func CreateProcessor(options model.CSNOptions, rules []model.CSNRule) *CSNProcessor {
+func CreateProcessor(options csn.CSNOptions, rules []csn.CSNRule) *CSNProcessor {
 	result := &CSNProcessor{
-		rules:          append([]model.CSNRule{}, rules...),
+		rules:          append([]csn.CSNRule{}, rules...),
 		postprocessors: make([]func(map[string]any), 0, 3),
 		targets: []jp.Expr{
 			jputils.Expr("$", "definitions", jputils.Eq("@.kind", "context")),
@@ -88,7 +88,7 @@ func CreateProcessor(options model.CSNOptions, rules []model.CSNRule) *CSNProces
 
 func (self *CSNProcessor) Process(document string, baselines ...string) string {
 	parsed := utils.SafeCast[map[string]any](oj.MustParseString(document))
-	rules := append(append([]model.CSNRule{}, self.rules...), self.extractBaselineRules(baselines...)...)
+	rules := append(append([]csn.CSNRule{}, self.rules...), self.extractBaselineRules(baselines...)...)
 
 	// Prune context,service and entity definitions
 	for _, target := range self.targets {
@@ -104,14 +104,14 @@ func (self *CSNProcessor) Process(document string, baselines ...string) string {
 	return oj.JSON(parsed)
 }
 
-func (self *CSNProcessor) extractBaselineRules(baselines ...string) []model.CSNRule {
-	result := make([]model.CSNRule, 0)
-	extract := func(expr jp.Expr, definition map[string]any) []model.CSNRule {
-		result := make([]model.CSNRule, 0)
+func (self *CSNProcessor) extractBaselineRules(baselines ...string) []csn.CSNRule {
+	result := make([]csn.CSNRule, 0)
+	extract := func(expr jp.Expr, definition map[string]any) []csn.CSNRule {
+		result := make([]csn.CSNRule, 0)
 
 		for key := range definition {
 			if self.isAnnotation(key) || self.isPrivateProperty(key) {
-				result = append(result, model.CSNRule{
+				result = append(result, csn.CSNRule{
 					Value: key,
 					Kind:  "exact",
 					Path:  expr.Child(key).String(),
@@ -135,7 +135,7 @@ func (self *CSNProcessor) extractBaselineRules(baselines ...string) []model.CSNR
 	return result
 }
 
-func (self *CSNProcessor) prune(rules []model.CSNRule, expr jp.Expr, element map[string]any) {
+func (self *CSNProcessor) prune(rules []csn.CSNRule, expr jp.Expr, element map[string]any) {
 	for key := range element {
 		if self.shouldDelete(rules, expr, key) {
 			delete(element, key)
@@ -143,9 +143,9 @@ func (self *CSNProcessor) prune(rules []model.CSNRule, expr jp.Expr, element map
 	}
 }
 
-func (self *CSNProcessor) shouldDelete(rules []model.CSNRule, expr jp.Expr, value string) bool {
+func (self *CSNProcessor) shouldDelete(rules []csn.CSNRule, expr jp.Expr, value string) bool {
 	return (self.isAnnotation(value) || self.isPrivateProperty(value)) &&
-		utils.None(rules, func(rule model.CSNRule) bool { return rule.Matches(expr.Child(value), value) })
+		utils.None(rules, func(rule csn.CSNRule) bool { return rule.Matches(expr.Child(value), value) })
 }
 
 func (self *CSNProcessor) isAnnotation(value string) bool {

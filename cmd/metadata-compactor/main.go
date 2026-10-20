@@ -14,6 +14,7 @@ import (
 
 type CommandLine struct {
 	Input    string
+	Format   metadatacompactor.Format
 	Rules    string
 	Out      string
 	Baseline string
@@ -61,20 +62,23 @@ func rules(path string, result *model.Ruleset) *model.Ruleset {
 
 func options(args []string, stderr io.Writer) (CommandLine, error) {
 	var result CommandLine
+	var inputFormat string
 
 	flags := flag.NewFlagSet("metadata-compactor", flag.ContinueOnError)
 	flags.SetOutput(stderr)
-	flags.StringVar(&result.Input, "i", "", "path to the CSN JSON file to compact (required)")
-	flags.StringVar(&result.Input, "input", "", "path to the CSN JSON file to compact (required)")
+	flags.StringVar(&result.Input, "i", "", "path to the JSON file to compact (required)")
+	flags.StringVar(&result.Input, "input", "", "path to the JSON file to compact (required)")
+	flags.StringVar(&inputFormat, "f", "csn", "input format: csn or oas")
+	flags.StringVar(&inputFormat, "format", "csn", "input format: csn or oas")
 	flags.StringVar(&result.Rules, "r", "", "path to the JSON compaction rules file (required)")
 	flags.StringVar(&result.Rules, "rules", "", "path to the JSON compaction rules file (required)")
-	flags.StringVar(&result.Out, "o", "", "path for compacted CSN output (default: stdout)")
-	flags.StringVar(&result.Out, "output", "", "path for compacted CSN output (default: stdout)")
+	flags.StringVar(&result.Out, "o", "", "path for compacted output (default: stdout)")
+	flags.StringVar(&result.Out, "output", "", "path for compacted output (default: stdout)")
 	flags.StringVar(&result.Baseline, "b", "", "compaction baseline")
 	flags.StringVar(&result.Baseline, "baseline", "", "compaction baseline")
 
 	flags.Usage = func() {
-		fmt.Fprintf(flags.Output(), "Usage: %s -i <input.json> -r <rules.json> [-o <output.json>]  [-b <baseline.json>]\n", flags.Name())
+		fmt.Fprintf(flags.Output(), "Usage: %s -i <input.json> -r <rules.json> [-f <csn|oas>] [-o <output.json>] [-b <baseline.json>]\n", flags.Name())
 		flags.PrintDefaults()
 	}
 
@@ -90,6 +94,14 @@ func options(args []string, stderr io.Writer) (CommandLine, error) {
 	if result.Rules == "" {
 		return result, errors.New("missing required -r argument")
 	}
+	switch inputFormat {
+	case "csn":
+		result.Format = metadatacompactor.CSN
+	case "oas":
+		result.Format = metadatacompactor.OAS
+	default:
+		return result, fmt.Errorf("unsupported input format %q: expected csn or oas", inputFormat)
+	}
 
 	return result, nil
 }
@@ -100,6 +112,6 @@ func main() {
 	write(
 		output(options),
 		metadatacompactor.Create(rules(options.Rules, &model.Ruleset{})).
-			Process(metadatacompactor.CSN, load(options.Input), baselines(options)...),
+			Process(options.Format, load(options.Input), baselines(options)...),
 	)
 }

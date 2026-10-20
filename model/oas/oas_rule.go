@@ -1,4 +1,4 @@
-package model
+package oas
 
 import (
 	"encoding/json"
@@ -8,13 +8,13 @@ import (
 	"github.com/open-resource-discovery/metadata-compactor-golang/internal/common/utils"
 )
 
-type CSNRule struct {
+type OASRule struct {
 	Kind  string
 	Value string
 	Path  string
 }
 
-func (self *CSNRule) Matches(expr jp.Expr, value string) bool {
+func (self *OASRule) Matches(expr jp.Expr, value string) bool {
 	if self.Path != "" && self.Path != expr.String() {
 		return false
 	}
@@ -23,16 +23,16 @@ func (self *CSNRule) Matches(expr jp.Expr, value string) bool {
 	case "exact":
 		return self.Value == value
 	case "glob":
-		return strings.HasPrefix(value, self.Value[:len(self.Value)-1]) // value is '@x.y.z' and self.Value is '@x.y.*'
+		return strings.HasPrefix(value, self.Value[:len(self.Value)-2]) // value is 'x-y-z' and self.Value is 'x-y-*'
 	default:
 		return false
 	}
 }
 
-func (self *CSNRule) UnmarshalJSON(data []byte) error {
+func (self *OASRule) UnmarshalJSON(data []byte) error {
 	err := json.Unmarshal(data, &self.Value)
 
-	self.Kind = utils.Ternary(strings.HasSuffix(self.Value, ".*"), "glob", "exact")
+	self.Kind = utils.Ternary(strings.HasSuffix(self.Value, "-*"), "glob", "exact")
 
 	return err
 }

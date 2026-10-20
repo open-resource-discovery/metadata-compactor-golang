@@ -1,6 +1,6 @@
 //go:build unit
 
-package model
+package csn
 
 import (
 	"encoding/json"

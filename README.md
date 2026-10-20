@@ -4,9 +4,11 @@
 
 # Metadata Compactor Golang Library
 
-Compact metadata documents for AI-friendly exposure. The library is designed to support multiple document formats; [Core Schema Notation](https://sap.github.io/csn-interop-specification/) (CSN) JSON is currently supported, with additional formats planned.
+Compact metadata documents for AI-friendly exposure. The library supports [Core Schema Notation](https://sap.github.io/csn-interop-specification/) (CSN) JSON and [OpenAPI](https://spec.openapis.org/oas/latest.html) (OAS) JSON documents.
 
 For CSN documents, rulesets and optional baseline documents control which annotations and private properties remain, and whether custom types and association elements are preserved.
+
+For OpenAPI documents, rulesets and optional baseline documents control which Specification Extensions (`x-*` fields) remain. The processor traverses the OpenAPI object model so that values such as an `x-request-id` HTTP header name are not mistaken for Specification Extensions. Input documents are assumed to be valid OpenAPI documents.
 
 ```mermaid
 flowchart TD
@@ -59,23 +61,30 @@ go build -o metadata-compactor ./cmd/metadata-compactor
 
 This creates a `metadata-compactor` executable in the current directory.
 
-## CSN usage
+## Command-line usage
 
 ```text
-metadata-compactor -i <input.json> -r <rules.json> [-b <baseline.json>] [-o <output.json>]
+metadata-compactor -i <input.json> -r <rules.json> [-f <csn|oas>] [-b <baseline.json>] [-o <output.json>]
 ```
 
 | Flag | Required | Description |
 | --- | --- | --- |
-| `-i`, `--input` | Yes | Path to the CSN JSON document to compact. |
+| `-i`, `--input` | Yes | Path to the JSON document to compact. |
 | `-r`, `--rules` | Yes | Path to the JSON rules file. |
-| `-b`, `--baseline` | No | Path to a baseline CSN document from which path-specific preservation rules are derived. |
-| `-o`, `--output` | No | Path for the compacted CSN. When omitted, the result is written to standard output. |
+| `-f`, `--format` | No | Input format: `csn` (the default) or `oas`. |
+| `-b`, `--baseline` | No | Path to a baseline document of the selected format from which path-specific preservation rules are derived. |
+| `-o`, `--output` | No | Path for the compacted document. When omitted, the result is written to standard output. |
 
 For example, write the compacted document to a file:
 
 ```sh
 ./metadata-compactor -i input.airline.csn.json -r rules.json -o compacted.airline.csn.json
+```
+
+Compact an OpenAPI document by selecting the `oas` format:
+
+```sh
+./metadata-compactor -f oas -i openapi.json -r rules.json -o compacted.openapi.json
 ```
 
 Or send it directly to another command:
@@ -143,7 +152,7 @@ go test -tags unit,integration ./...
 
 ## Rules file
 
-The rules file is a versioned CSN compaction configuration. Its structure is defined by [the JSON Schema](resources/schemas/ruleset.schema.json).
+The rules file is a versioned compaction configuration with format-specific sections. A [JSON Schema](resources/schemas/ruleset.schema.json) is available for the CSN configuration.
 
 ```json
 {
@@ -160,6 +169,12 @@ The rules file is a versioned CSN compaction configuration. Its structure is def
       "@EndUserText.label",
       "@PersonalData.*",
       "__private"
+    ]
+  },
+  "oas": {
+    "preserve": [
+      "x-audience",
+      "x-sap-*"
     ]
   }
 }
@@ -179,6 +194,8 @@ An empty `preserve` list removes all annotations and private properties.
 
 Both options default to `false` when omitted by the Go JSON decoder; include them explicitly in rules files to conform to the JSON Schema.
 
+`oas.preserve` is an allowlist for OpenAPI Specification Extensions. Exact entries preserve only the named extension, while an entry ending in `-*` preserves all extensions with that prefix. An empty or omitted list removes all Specification Extensions from supported OpenAPI objects.
+
 ## CSN compaction behavior
 
 The processor:
@@ -191,6 +208,33 @@ The processor:
 6. Resolves supported attributes from referenced custom types and removes their definitions unless `preserve_types` is enabled.
 
 The original input is never modified; the command writes a compacted JSON document to standard output or the path supplied with `-o`.
+
+## OpenAPI compaction behavior
+
+The OpenAPI processor:
+
+1. Walks valid OpenAPI objects that support Specification Extensions.
+2. Derives exact, path-specific rules from Specification Extensions present in any supplied baseline documents.
+3. Combines baseline-derived rules with the global `oas.preserve` allowlist.
+4. Removes unselected `x-*` fields from those objects while retaining the rest of the OpenAPI document.
+5. Preserves semantic map keys that happen to start with `x-`, such as custom HTTP header names.
+
+For example, the following command retains extensions selected by `oas.preserve` and extensions found at matching paths in the baseline:
+
+```sh
+./metadata-compactor \
+  -f oas \
+  -i current.openapi.json \
+  -r rules.json \
+  -b previous.openapi.json \
+  -o compacted.openapi.json
+```
+
+The Go API selects OpenAPI processing with `OAS`:
+
+```go
+result := processor.Process(metadata_compactor_golang.OAS, input, baseline)
+```
 
 ## Support, Feedback, Contributing
 

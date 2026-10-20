@@ -1,4 +1,4 @@
-package model
+package csn
 
 type CSNOptions struct {
 	PreserveTypes        bool `json:"preserve_types"`
