@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/open-resource-discovery/metadata-compactor-golang/resources/schemas/ruleset.schema.json",
-  "title": "Metadata filtering ruleset",
-  "description": "A versioned set of metadata-filtering rules organized by document format.",
+  "title": "Metadata compaction ruleset",
+  "description": "A versioned set of metadata-compaction rules organized by document format.",
   "type": "object",
   "additionalProperties": false,
   "required": [

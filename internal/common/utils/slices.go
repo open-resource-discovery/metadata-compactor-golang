@@ -4,7 +4,6 @@ import (
 	"slices"
 )
 
-// TODO - unit tests
 func None[E any](elements []E, predicate func(E) bool) bool {
 	for _, element := range elements {
 		if predicate(element) {
@@ -15,7 +14,6 @@ func None[E any](elements []E, predicate func(E) bool) bool {
 	return true
 }
 
-// TODO - unit tests
 func Last[E any](elements []E) E {
 	return elements[len(elements)-1]
 }

@@ -8,7 +8,7 @@ import (
 	"io"
 	"os"
 
-	metadatafiltering "github.com/open-resource-discovery/metadata-compactor-golang"
+	metadatacompactor "github.com/open-resource-discovery/metadata-compactor-golang"
 	"github.com/open-resource-discovery/metadata-compactor-golang/model"
 )
 
@@ -62,16 +62,16 @@ func rules(path string, result *model.Ruleset) *model.Ruleset {
 func options(args []string, stderr io.Writer) (CommandLine, error) {
 	var result CommandLine
 
-	flags := flag.NewFlagSet("metadata-filtering", flag.ContinueOnError)
+	flags := flag.NewFlagSet("metadata-compactor", flag.ContinueOnError)
 	flags.SetOutput(stderr)
-	flags.StringVar(&result.Input, "i", "", "path to the CSN JSON file to filter (required)")
-	flags.StringVar(&result.Input, "input", "", "path to the CSN JSON file to filter (required)")
-	flags.StringVar(&result.Rules, "r", "", "path to the JSON filtering rules file (required)")
-	flags.StringVar(&result.Rules, "rules", "", "path to the JSON filtering rules file (required)")
-	flags.StringVar(&result.Out, "o", "", "path for filtered CSN output (default: stdout)")
-	flags.StringVar(&result.Out, "output", "", "path for filtered CSN output (default: stdout)")
-	flags.StringVar(&result.Baseline, "b", "", "TODO - TBD")
-	flags.StringVar(&result.Baseline, "baseline", "", "TODO - TBD")
+	flags.StringVar(&result.Input, "i", "", "path to the CSN JSON file to compact (required)")
+	flags.StringVar(&result.Input, "input", "", "path to the CSN JSON file to compact (required)")
+	flags.StringVar(&result.Rules, "r", "", "path to the JSON compaction rules file (required)")
+	flags.StringVar(&result.Rules, "rules", "", "path to the JSON compaction rules file (required)")
+	flags.StringVar(&result.Out, "o", "", "path for compacted CSN output (default: stdout)")
+	flags.StringVar(&result.Out, "output", "", "path for compacted CSN output (default: stdout)")
+	flags.StringVar(&result.Baseline, "b", "", "compaction baseline")
+	flags.StringVar(&result.Baseline, "baseline", "", "compaction baseline")
 
 	flags.Usage = func() {
 		fmt.Fprintf(flags.Output(), "Usage: %s -i <input.json> -r <rules.json> [-o <output.json>]  [-b <baseline.json>]\n", flags.Name())
@@ -99,7 +99,7 @@ func main() {
 
 	write(
 		output(options),
-		metadatafiltering.Create(rules(options.Rules, &model.Ruleset{})).
-			Process(metadatafiltering.CSN, load(options.Input), baselines(options)...),
+		metadatacompactor.Create(rules(options.Rules, &model.Ruleset{})).
+			Process(metadatacompactor.CSN, load(options.Input), baselines(options)...),
 	)
 }
