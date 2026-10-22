@@ -1,0 +1,5 @@
+{
+  "$.info['x-sap-api-state']": "active",
+  "$.paths['/pets/{petId}'].get.responses.404['x-sap-error-category']": "not-found",
+  "$['x-sap-shortText']": "Manages pet records for your pet shop."
+}

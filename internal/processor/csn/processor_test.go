@@ -7,12 +7,12 @@ import (
 
 	"github.com/ohler55/ojg/oj"
 	"github.com/open-resource-discovery/metadata-compactor-golang/internal/common/testutils"
-	"github.com/open-resource-discovery/metadata-compactor-golang/model"
+	"github.com/open-resource-discovery/metadata-compactor-golang/model/csn"
 )
 
 func TestCSNProcessorProcess(t *testing.T) {
 	t.Run("prunes disallowed properties and resolves custom types", func(t *testing.T) {
-		processor := CreateProcessor(model.CSNOptions{}, []model.CSNRule{{Kind: "exact", Value: "@Keep"}})
+		processor := CreateProcessor(csn.CSNOptions{}, []csn.CSNRule{{Kind: "exact", Value: "@Keep"}})
 
 		result := processor.Process(`{
 			"definitions": {
@@ -95,7 +95,7 @@ func TestCSNProcessorProcess(t *testing.T) {
 	})
 
 	t.Run("removes all annotations and private properties when no rules are supplied", func(t *testing.T) {
-		result := CreateProcessor(model.CSNOptions{}, nil).Process(`{
+		result := CreateProcessor(csn.CSNOptions{}, nil).Process(`{
 			"definitions": {
 				"Entity": {
 					"kind": "entity",
@@ -118,7 +118,7 @@ func TestCSNProcessorProcess(t *testing.T) {
 
 func TestCSNProcessorBranchCases(t *testing.T) {
 	t.Run("glob rule keeps matching annotations only", func(t *testing.T) {
-		processor := CreateProcessor(model.CSNOptions{}, []model.CSNRule{{Kind: "glob", Value: "@PersonalData.*"}})
+		processor := CreateProcessor(csn.CSNOptions{}, []csn.CSNRule{{Kind: "glob", Value: "@PersonalData.*"}})
 
 		result := processor.Process(`{
 			"definitions": {
@@ -136,7 +136,7 @@ func TestCSNProcessorBranchCases(t *testing.T) {
 	})
 
 	t.Run("leaves builtin, untyped, and undefined custom types unresolved", func(t *testing.T) {
-		result := CreateProcessor(model.CSNOptions{PreserveTypes: true}, nil).Process(`{
+		result := CreateProcessor(csn.CSNOptions{PreserveTypes: true}, nil).Process(`{
 			"definitions": {
 				"Entity": {
 					"kind": "entity",
@@ -195,8 +195,8 @@ func TestCSNProcessorBaselines(t *testing.T) {
 		}`
 
 		processor := CreateProcessor(
-			model.CSNOptions{PreserveTypes: true, PreserveAssociations: true},
-			[]model.CSNRule{{Kind: "exact", Value: "@rule"}},
+			csn.CSNOptions{PreserveTypes: true, PreserveAssociations: true},
+			[]csn.CSNRule{{Kind: "exact", Value: "@rule"}},
 		)
 		definitions := oj.MustParseString(processor.Process(input, baseline)).(map[string]any)["definitions"].(map[string]any)
 
@@ -216,7 +216,7 @@ func TestCSNProcessorBaselines(t *testing.T) {
 		first := `{"definitions":{"Entity":{"kind":"entity","@one":true}}}`
 		second := `{"definitions":{"Entity":{"kind":"entity","@two":true}}}`
 
-		definitions := oj.MustParseString(CreateProcessor(model.CSNOptions{}, nil).Process(input, first, second)).(map[string]any)["definitions"].(map[string]any)
+		definitions := oj.MustParseString(CreateProcessor(csn.CSNOptions{}, nil).Process(input, first, second)).(map[string]any)["definitions"].(map[string]any)
 		assertKeys(t, definitions["Entity"].(map[string]any), "kind", "@one", "@two", "elements")
 	})
 }
@@ -224,15 +224,15 @@ func TestCSNProcessorBaselines(t *testing.T) {
 func TestCSNProcessorOptions(t *testing.T) {
 	tests := []struct {
 		name                  string
-		options               model.CSNOptions
+		options               csn.CSNOptions
 		wantTypeDefinition    bool
 		wantResolvedType      string
 		wantAssociationExists bool
 	}{
-		{"removes types and associations by default", model.CSNOptions{}, false, "cds.String", false},
-		{"preserves type definitions", model.CSNOptions{PreserveTypes: true}, true, "CustomType", false},
-		{"preserves associations", model.CSNOptions{PreserveAssociations: true}, false, "cds.String", true},
-		{"preserves types and associations", model.CSNOptions{PreserveTypes: true, PreserveAssociations: true}, true, "CustomType", true},
+		{"removes types and associations by default", csn.CSNOptions{}, false, "cds.String", false},
+		{"preserves type definitions", csn.CSNOptions{PreserveTypes: true}, true, "CustomType", false},
+		{"preserves associations", csn.CSNOptions{PreserveAssociations: true}, false, "cds.String", true},
+		{"preserves types and associations", csn.CSNOptions{PreserveTypes: true, PreserveAssociations: true}, true, "CustomType", true},
 	}
 
 	const document = `{
@@ -250,7 +250,7 @@ func TestCSNProcessorOptions(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			processor := CreateProcessor(tc.options, []model.CSNRule{{Kind: "exact", Value: "@Keep"}})
+			processor := CreateProcessor(tc.options, []csn.CSNRule{{Kind: "exact", Value: "@Keep"}})
 			definitions := oj.MustParseString(processor.Process(document)).(map[string]any)["definitions"].(map[string]any)
 			typeDefinition, hasTypeDefinition := definitions["CustomType"]
 			if hasTypeDefinition != tc.wantTypeDefinition {

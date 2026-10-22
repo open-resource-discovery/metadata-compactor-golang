@@ -1,0 +1,8 @@
+{
+  "version": "test",
+  "created_at": "2026-10-22T00:00:00Z",
+  "description": "Remove all specification extensions.",
+  "oas": {
+    "preserve": []
+  }
+}

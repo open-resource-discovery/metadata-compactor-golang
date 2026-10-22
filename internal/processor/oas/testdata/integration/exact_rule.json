@@ -1,0 +1,8 @@
+{
+  "version": "test",
+  "created_at": "2026-10-22T00:00:00Z",
+  "description": "Preserve one exact specification extension.",
+  "oas": {
+    "preserve": ["x-internal-operation-id"]
+  }
+}
