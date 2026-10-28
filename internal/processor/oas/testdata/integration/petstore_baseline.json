@@ -1,0 +1,17 @@
+{
+  "x-sap-shortText": "baseline values do not replace input values",
+  "info": {
+    "x-sap-api-state": "baseline value"
+  },
+  "paths": {
+    "/pets/{petId}": {
+      "get": {
+        "responses": {
+          "404": {
+            "x-sap-error-category": "baseline value"
+          }
+        }
+      }
+    }
+  }
+}

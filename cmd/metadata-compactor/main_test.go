@@ -7,7 +7,40 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	metadatacompactor "github.com/open-resource-discovery/metadata-compactor-golang"
 )
+
+func TestOptionsFormat(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+		want metadatacompactor.Format
+	}{
+		{"defaults to CSN", []string{"-i", "input.json", "-r", "rules.json"}, metadatacompactor.CSN},
+		{"short OAS flag", []string{"-i", "input.json", "-r", "rules.json", "-f", "oas"}, metadatacompactor.OAS},
+		{"long OAS flag", []string{"-i", "input.json", "-r", "rules.json", "--format", "oas"}, metadatacompactor.OAS},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := options(tc.args, &bytes.Buffer{})
+			if err != nil {
+				t.Fatalf("options() error = %v", err)
+			}
+			if got.Format != tc.want {
+				t.Errorf("Format = %v, want %v", got.Format, tc.want)
+			}
+		})
+	}
+}
+
+func TestOptionsRejectsUnsupportedFormat(t *testing.T) {
+	_, err := options([]string{"-i", "input.json", "-r", "rules.json", "-f", "yaml"}, &bytes.Buffer{})
+	if err == nil {
+		t.Fatal("options() expected an error")
+	}
+}
 
 func TestOptionsBaseline(t *testing.T) {
 	tests := []struct {

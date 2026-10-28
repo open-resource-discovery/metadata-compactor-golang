@@ -1,0 +1,13 @@
+{
+  "$.components['x-sap-component-domain']": "petstore",
+  "$.externalDocs['x-sap-documentation-type']": "guide",
+  "$.info.contact['x-sap-support-tier']": "gold",
+  "$.info['x-sap-api-state']": "active",
+  "$.paths['/pets'].get.parameters[0]['x-sap-parameter-category']": "pagination",
+  "$.paths['/pets'].get.responses.200.content['application/json']['x-sap-content-profile']": "pet-list",
+  "$.paths['/pets'].get['x-sap-data-classification']": "public",
+  "$.paths['/pets']['x-sap-resource-name']": "PetCollection",
+  "$.paths['/pets/{petId}'].get.responses.404['x-sap-error-category']": "not-found",
+  "$.servers[0]['x-sap-environment']": "production",
+  "$['x-sap-shortText']": "Manages pet records for your pet shop."
+}

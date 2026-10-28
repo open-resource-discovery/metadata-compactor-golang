@@ -1,4 +1,4 @@
-package model
+package csn
 
 type CSNRuleset struct {
 	Options CSNOptions `json:"options"`

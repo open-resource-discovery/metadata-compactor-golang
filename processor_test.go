@@ -8,13 +8,14 @@ import (
 
 	"github.com/ohler55/ojg/oj"
 	"github.com/open-resource-discovery/metadata-compactor-golang/model"
+	"github.com/open-resource-discovery/metadata-compactor-golang/model/csn"
 )
 
 func TestProcessorProcessCSN(t *testing.T) {
 	processor := Create(&model.Ruleset{
-		CSN: model.CSNRuleset{
-			Options: model.CSNOptions{PreserveTypes: true, PreserveAssociations: true},
-			Rules:   []model.CSNRule{{Kind: "exact", Value: "@Keep"}},
+		CSN: csn.CSNRuleset{
+			Options: csn.CSNOptions{PreserveTypes: true, PreserveAssociations: true},
+			Rules:   []csn.CSNRule{{Kind: "exact", Value: "@Keep"}},
 		},
 	})
 
