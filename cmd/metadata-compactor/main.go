@@ -14,11 +14,11 @@ import (
 )
 
 type CommandLine struct {
-	Input     string
-	Format    metadatacompactor.Format
-	Rules     string
-	Out       string
-	Baselines []string
+	Input    string
+	Format   metadatacompactor.Format
+	Rules    string
+	Out      string
+	Baseline string
 }
 
 func load(path string) string {
@@ -45,11 +45,10 @@ func output(options CommandLine) io.Writer {
 }
 
 func baselines(options CommandLine) []string {
-	result := make([]string, 0, len(options.Baselines))
-	for _, path := range options.Baselines {
-		result = append(result, load(path))
+	if options.Baseline == "" {
+		return nil
 	}
-	return result
+	return []string{load(options.Baseline)}
 }
 
 func rules(path string, result *model.Ruleset) *model.Ruleset {
@@ -63,20 +62,16 @@ func options(args []string, stderr io.Writer) (CommandLine, error) {
 
 	flags := flag.NewFlagSet("metadata-compactor", flag.ContinueOnError)
 	flags.SetOutput(stderr)
-	flags.StringVar(&result.Input, "i", "", "path to the JSON or XML document to compact (required)")
-	flags.StringVar(&result.Input, "input", "", "path to the JSON or XML document to compact (required)")
+	flags.StringVar(&result.Input, "i", "", "path to the document to compact (required)")
+	flags.StringVar(&result.Input, "input", "", "path to the document to compact (required)")
 	flags.StringVar(&inputFormat, "f", "csn", "input format: csn, oas, or edmx")
 	flags.StringVar(&inputFormat, "format", "csn", "input format: csn, oas, or edmx")
 	flags.StringVar(&result.Rules, "r", "", "path to the JSON compaction rules file (required)")
 	flags.StringVar(&result.Rules, "rules", "", "path to the JSON compaction rules file (required)")
 	flags.StringVar(&result.Out, "o", "", "path for compacted output (default: stdout)")
 	flags.StringVar(&result.Out, "output", "", "path for compacted output (default: stdout)")
-	addBaseline := func(path string) error {
-		result.Baselines = append(result.Baselines, path)
-		return nil
-	}
-	flags.Func("b", "path to a baseline document; repeat for multiple baselines", addBaseline)
-	flags.Func("baseline", "path to a baseline document; repeat for multiple baselines", addBaseline)
+	flags.StringVar(&result.Baseline, "b", "", "path to a baseline document")
+	flags.StringVar(&result.Baseline, "baseline", "", "path to a baseline document")
 
 	flags.Usage = func() {
 		fmt.Fprintf(flags.Output(), "Usage: %s -i <input> -r <rules.json> [-f <csn|oas|edmx>] [-o <output>] [-b <baseline>]\n", flags.Name())

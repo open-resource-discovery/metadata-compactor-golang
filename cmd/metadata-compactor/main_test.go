@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	metadatacompactor "github.com/open-resource-discovery/metadata-compactor-golang"
@@ -48,11 +47,12 @@ func TestOptionsBaseline(t *testing.T) {
 	tests := []struct {
 		name string
 		args []string
-		want []string
+		want string
 	}{
-		{"baseline omitted", []string{"-i", "input.json", "-r", "rules.json"}, nil},
-		{"short baseline flag", []string{"-i", "input.json", "-r", "rules.json", "-b", "base.json"}, []string{"base.json"}},
-		{"long baseline flag", []string{"-i", "input.json", "-r", "rules.json", "--baseline", "base.json"}, []string{"base.json"}},
+		{"baseline omitted", []string{"-i", "input.json", "-r", "rules.json"}, ""},
+		{"short baseline flag", []string{"-i", "input.json", "-r", "rules.json", "-b", "base.json"}, "base.json"},
+		{"long baseline flag", []string{"-i", "input.json", "-r", "rules.json", "--baseline", "base.json"}, "base.json"},
+		{"repeated flags select one baseline", []string{"-i", "input.json", "-r", "rules.json", "-b", "first.json", "--baseline", "last.json"}, "last.json"},
 	}
 
 	for _, tc := range tests {
@@ -61,8 +61,8 @@ func TestOptionsBaseline(t *testing.T) {
 			if err != nil {
 				t.Fatalf("options() error = %v", err)
 			}
-			if !reflect.DeepEqual(got.Baselines, tc.want) {
-				t.Errorf("Baseline = %q, want %q", got.Baselines, tc.want)
+			if got.Baseline != tc.want {
+				t.Errorf("Baseline = %q, want %q", got.Baseline, tc.want)
 			}
 		})
 	}
@@ -81,7 +81,7 @@ func TestBaselines(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		got := baselines(CommandLine{Baselines: []string{path}})
+		got := baselines(CommandLine{Baseline: path})
 		if len(got) != 1 || got[0] != `{"definitions":{}}` {
 			t.Errorf("baselines() = %q, want one baseline document", got)
 		}
@@ -89,11 +89,11 @@ func TestBaselines(t *testing.T) {
 }
 
 func TestEDMXOptions(t *testing.T) {
-	got, err := options([]string{"-f", "EDMX", "-i", "metadata.edmx", "-r", "rules.json", "-b", "one.edmx", "--baseline", "two.edmx"}, io.Discard)
+	got, err := options([]string{"-f", "EDMX", "-i", "metadata.edmx", "-r", "rules.json", "-b", "one.edmx"}, io.Discard)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Format != metadatacompactor.EDMX || !reflect.DeepEqual(got.Baselines, []string{"one.edmx", "two.edmx"}) {
+	if got.Format != metadatacompactor.EDMX || got.Baseline != "one.edmx" {
 		t.Fatalf("unexpected options: %#v", got)
 	}
 }

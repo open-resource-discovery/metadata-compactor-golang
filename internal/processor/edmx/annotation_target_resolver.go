@@ -3,13 +3,13 @@ package edmx
 import (
 	"strings"
 
-	"github.com/open-resource-discovery/metadata-compactor-golang/internal/common/xmltree"
+	"github.com/open-resource-discovery/metadata-compactor-golang/internal/common/xml2json"
 )
 
 // AnnotationTargetResolver follows CSDL 4.01 target identities used by Node PR #5.
 type AnnotationTargetResolver struct{}
 
-func (r AnnotationTargetResolver) Resolve(nodes []xmltree.Node) (string, bool) {
+func (r AnnotationTargetResolver) Resolve(nodes []xml2json.Node) (string, bool) {
 	if len(nodes) == 0 || localName(nodes[len(nodes)-1]) != "Annotation" {
 		return "", false
 	}
@@ -17,39 +17,39 @@ func (r AnnotationTargetResolver) Resolve(nodes []xmltree.Node) (string, bool) {
 }
 
 // ResolveQualifier inherits block qualifiers only for direct child annotations.
-func (r AnnotationTargetResolver) ResolveQualifier(nodes []xmltree.Node) (string, bool) {
+func (r AnnotationTargetResolver) ResolveQualifier(nodes []xml2json.Node) (string, bool) {
 	if len(nodes) == 0 || localName(nodes[len(nodes)-1]) != "Annotation" {
 		return "", false
 	}
 	annotation := nodes[len(nodes)-1]
-	if qualifier, found := annotation.Attribute("Qualifier"); found {
-		return qualifier, true
+	if annotation.Attributes().Has("Qualifier") {
+		return annotation.Attribute("Qualifier"), true
 	}
 	if len(nodes) >= 2 {
 		parent := nodes[len(nodes)-2]
 		if localName(parent) == "Annotations" {
-			return parent.Attribute("Qualifier")
+			return parent.Attribute("Qualifier"), parent.Attributes().Has("Qualifier")
 		}
 	}
 	return "", false
 }
 
-func (r AnnotationTargetResolver) resolveElement(nodes []xmltree.Node) (string, bool) {
+func (r AnnotationTargetResolver) resolveElement(nodes []xml2json.Node) (string, bool) {
 	if len(nodes) == 0 {
 		return "", false
 	}
 	element := nodes[len(nodes)-1]
 	parents := nodes[:len(nodes)-1]
-	var parent xmltree.Node
+	var parent xml2json.Node
 	if len(parents) > 0 {
 		parent = parents[len(parents)-1]
 	}
 	switch name := localName(element); name {
 	case "Annotations":
-		target, _ := element.Attribute("Target")
+		target := element.Attribute("Target")
 		return nonempty(target)
 	case "Annotation":
-		term, _ := element.Attribute("Term")
+		term := element.Attribute("Term")
 		if _, found := nonempty(term); !found {
 			return "", false
 		}
@@ -61,34 +61,34 @@ func (r AnnotationTargetResolver) resolveElement(nodes []xmltree.Node) (string, 
 		target, _ := r.resolveElement(parents)
 		return appendTarget(target, suffix)
 	case "Schema":
-		namespace, _ := element.Attribute("Namespace")
+		namespace := element.Attribute("Namespace")
 		return nonempty(namespace)
 	case "Action", "Function":
 		if localName(parent) != "Schema" {
 			return "", false
 		}
-		namespace, _ := parent.Attribute("Namespace")
+		namespace := parent.Attribute("Namespace")
 		return operationTarget(namespace, element)
 	case "EnumType", "EntityType", "ComplexType", "EntityContainer", "TypeDefinition", "Term":
 		if localName(parent) != "Schema" {
 			return "", false
 		}
-		namespace, _ := parent.Attribute("Namespace")
-		value, _ := element.Attribute("Name")
+		namespace := parent.Attribute("Namespace")
+		value := element.Attribute("Name")
 		return qualify(namespace, value)
 	case "Parameter", "ReturnType":
 		if localName(parent) != "Action" && localName(parent) != "Function" {
 			return "", false
 		}
 		target, _ := r.resolveElement(parents)
-		suffix, _ := element.Attribute("Name")
+		suffix := element.Attribute("Name")
 		if name == "ReturnType" {
 			suffix = "$ReturnType"
 		}
 		return appendTarget(target, suffix)
 	case "Member", "Property", "NavigationProperty", "EntitySet", "Singleton", "ActionImport", "FunctionImport":
 		target, _ := r.resolveElement(parents)
-		value, _ := element.Attribute("Name")
+		value := element.Attribute("Name")
 		return appendTarget(target, value)
 	default:
 		// Expressions and other non-addressable elements do not inherit a model target.
@@ -96,24 +96,24 @@ func (r AnnotationTargetResolver) resolveElement(nodes []xmltree.Node) (string, 
 	}
 }
 
-func operationTarget(namespace string, operation xmltree.Node) (string, bool) {
-	value, _ := operation.Attribute("Name")
+func operationTarget(namespace string, operation xml2json.Node) (string, bool) {
+	value := operation.Attribute("Name")
 	name, found := qualify(namespace, value)
 	if !found {
 		return "", false
 	}
 	isAction := localName(operation) == "Action"
-	binding, _ := operation.Attribute("IsBound")
+	binding := operation.Attribute("IsBound")
 	isBound := binding == "true" || binding == "1"
 	if isAction && !isBound {
 		return name + "()", true
 	}
 	var types []string
 	for _, child := range operation.Nodes() {
-		if child.Kind() != "element" || localName(child) != "Parameter" {
+		if child.Type() != "element" || localName(child) != "Parameter" {
 			continue
 		}
-		value, _ := child.Attribute("Type")
+		value := child.Attribute("Type")
 		typ, found := nonempty(value)
 		if !found {
 			return "", false
@@ -130,7 +130,7 @@ func operationTarget(namespace string, operation xmltree.Node) (string, bool) {
 }
 
 func nonempty(value string) (string, bool) {
-	if isWhitespaceOnly(value) {
+	if xml2json.IsWhitespaceOnly(value) {
 		return "", false
 	}
 	return value, true
@@ -156,7 +156,7 @@ func qualify(namespace, name string) (string, bool) {
 	return namespace + "." + name, true
 }
 
-func localName(node xmltree.Node) string {
+func localName(node xml2json.Node) string {
 	name := node.Name()
 	return name[strings.LastIndex(name, ":")+1:]
 }

@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/open-resource-discovery/metadata-compactor-golang/internal/common/testutils"
-	"github.com/open-resource-discovery/metadata-compactor-golang/internal/common/xmltree"
+	"github.com/open-resource-discovery/metadata-compactor-golang/internal/common/xml2json"
 )
 
 func TestAnnotationTargetResolverTargets(t *testing.T) {
@@ -19,6 +19,7 @@ func TestAnnotationTargetResolverTargets(t *testing.T) {
 		{"nested annotation targets", `<Schema Namespace="Demo"><EntityType Name="Product"><Annotation Term="V.Outer" Qualifier="Tablet"><Annotation Term="V.Inner"><Annotation Term="V.Deep"/></Annotation></Annotation></EntityType><Annotations Target="Demo.Product/ID" Qualifier="Phone"><Annotation Term="V.Outer"><Annotation Term="V.Inner" Qualifier="Nested"><Annotation Term="V.Deep"/></Annotation></Annotation></Annotations><Annotations Target="Demo.Product/@V.Existing#Q"><Annotation Term="V.T"/></Annotations></Schema>`, []string{"Demo.Product", "Demo.Product/@V.Outer#Tablet", "Demo.Product/@V.Outer#Tablet/@V.Inner", "Demo.Product/ID", "Demo.Product/ID/@V.Outer#Phone", "Demo.Product/ID/@V.Outer#Phone/@V.Inner#Nested", "Demo.Product/@V.Existing#Q"}},
 		{"expressions are not model targets", `<Schema Namespace="Demo"><EntityType Name="Product"><Annotation Term="V.Outer"><Record><Annotation Term="V.Record"/><PropertyValue Property="Label"><Annotation Term="V.Value"/></PropertyValue></Record></Annotation></EntityType></Schema>`, []string{"Demo.Product", "", ""}},
 		{"zero parameter function", `<Schema Namespace="Demo"><Function Name="Ping"><Annotation Term="V.T"/></Function></Schema>`, []string{"Demo.Ping()"}},
+		{"NEL is not whitespace in a target", `<Schema Namespace="Demo"><Annotations Target="&#x85;"><Annotation Term="V.T"/></Annotations></Schema>`, []string{"\u0085"}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) { testutils.AssertDeepEquals(t, tc.expected, annotationTargets(t, tc.content)) })
@@ -45,7 +46,7 @@ func TestAnnotationTargetResolverOperations(t *testing.T) {
 
 func TestAnnotationTargetResolverUnresolvedTargets(t *testing.T) {
 	resolver := AnnotationTargetResolver{}
-	for _, chain := range [][]xmltree.Node{nil, {{"name": "Property"}}, {{"name": "Annotation"}}} {
+	for _, chain := range [][]xml2json.Node{nil, {{"name": "Property"}}, {{"name": "Annotation"}}} {
 		if target, found := resolver.Resolve(chain); found {
 			t.Fatalf("unexpected target %q", target)
 		}
@@ -56,7 +57,8 @@ func TestAnnotationTargetResolverUnresolvedTargets(t *testing.T) {
 		{"missing property name", `<Schema Namespace="Demo"><EntityType Name="Product"><Property><Annotation Term="V.T"/></Property></EntityType></Schema>`},
 		{"missing external target", `<Schema Namespace="Demo"><Annotations><Annotation Term="V.T"/></Annotations></Schema>`},
 		{"empty external target", `<Schema Namespace="Demo"><Annotations Target=""><Annotation Term="V.T"/></Annotations></Schema>`},
-		{"whitespace external target", `<Schema Namespace="Demo"><Annotations Target="&#xFEFF;"><Annotation Term="V.T"/></Annotations></Schema>`},
+		{"whitespace external target", `<Schema Namespace="Demo"><Annotations Target=" &#x9; "><Annotation Term="V.T"/></Annotations></Schema>`},
+		{"BOM-only external target", `<Schema Namespace="Demo"><Annotations Target="&#xFEFF;"><Annotation Term="V.T"/></Annotations></Schema>`},
 		{"missing function parameter type", `<Schema Namespace="Demo"><Function Name="Run"><Parameter Name="input"><Annotation Term="V.T"/></Parameter></Function></Schema>`},
 		{"missing binding parameter", `<Schema Namespace="Demo"><Action Name="Run" IsBound="true"><Annotation Term="V.T"/></Action></Schema>`},
 		{"missing binding parameter type", `<Schema Namespace="Demo"><Action Name="Run" IsBound="true"><Parameter Name="binding"/><Annotation Term="V.T"/></Action></Schema>`},
@@ -110,22 +112,22 @@ func annotationTargets(t *testing.T, content string) []string {
 	return targets
 }
 
-func annotationContexts(t *testing.T, content string) [][]xmltree.Node {
+func annotationContexts(t *testing.T, content string) [][]xml2json.Node {
 	t.Helper()
-	document, err := xmltree.Convert(content)
+	document, err := xml2json.Convert(content)
 	if err != nil {
 		t.Fatal(err)
 	}
-	var result [][]xmltree.Node
-	var visit func([]xmltree.Node, []xmltree.Node)
-	visit = func(nodes, parents []xmltree.Node) {
+	var result [][]xml2json.Node
+	var visit func([]xml2json.Node, []xml2json.Node)
+	visit = func(nodes, parents []xml2json.Node) {
 		for _, node := range nodes {
-			if node.Kind() != "element" {
+			if node.Type() != "element" {
 				continue
 			}
 			chain := append(parents, node)
 			if localName(node) == "Annotation" {
-				result = append(result, append([]xmltree.Node(nil), chain...))
+				result = append(result, append([]xml2json.Node(nil), chain...))
 			}
 			visit(node.Nodes(), chain)
 		}

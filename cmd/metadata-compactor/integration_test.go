@@ -32,43 +32,39 @@ func TestCLIProcessesDocuments(t *testing.T) {
 	input := writeFile("metadata.edmx", `<Schema Namespace="Demo"><EntityType Name="Product"><Annotation Term="Global"/><Annotation Term="One" String="current"/><Annotation Term="Two"/><Annotation Term="Remove"/></EntityType></Schema>`)
 	rules := writeFile("rules.json", `{"edmx":{"preserve":["Global"]}}`)
 	first := writeFile("first.edmx", `<Schema><Annotations Target="Demo.Product"><Annotation Term="One" String="old"/></Annotations></Schema>`)
-	second := writeFile("second.edmx", `<Schema><Annotations Target="Demo.Product"><Annotation Term="Two"/></Annotations></Schema>`)
-	args := []string{"-f", "edmx", "-i", input, "-r", rules, "-b", first, "--baseline", second}
+	args := []string{"-f", "edmx", "-i", input, "-r", rules, "-b", first}
 	assertOutput := func(t *testing.T, content string) {
 		t.Helper()
-		for _, term := range []string{"Global", "One", "Two"} {
+		for _, term := range []string{"Global", "One"} {
 			if !strings.Contains(content, "Term=\""+term+"\"") {
 				t.Fatalf("missing %s in %s", term, content)
 			}
 		}
-		if strings.Contains(content, "Remove") || strings.Contains(content, "old") || !strings.Contains(content, "current") {
+		if strings.Contains(content, "Remove") || strings.Contains(content, "Two") || strings.Contains(content, "old") || !strings.Contains(content, "current") {
 			t.Fatalf("incorrect output: %s", content)
 		}
 	}
 	for _, tc := range []struct {
-		format, input, first, second, expected string
+		format, input, first, expected string
 	}{
 		{
 			format:   "csn",
 			input:    `{"definitions":{"Entity":{"kind":"entity","@One":"current","@Two":true,"@Remove":true,"elements":{}}}}`,
 			first:    `{"definitions":{"Entity":{"kind":"entity","@One":"old"}}}`,
-			second:   `{"definitions":{"Entity":{"kind":"entity","@Two":true}}}`,
-			expected: `{"definitions":{"Entity":{"kind":"entity","@One":"current","@Two":true,"elements":{}}}}`,
+			expected: `{"definitions":{"Entity":{"kind":"entity","@One":"current","elements":{}}}}`,
 		},
 		{
 			format:   "oas",
 			input:    `{"openapi":"3.0.0","info":{"title":"Demo","version":"1.0","x-one":"current","x-two":true,"x-remove":true},"paths":{}}`,
 			first:    `{"info":{"x-one":"old"}}`,
-			second:   `{"info":{"x-two":true}}`,
-			expected: `{"openapi":"3.0.0","info":{"title":"Demo","version":"1.0","x-one":"current","x-two":true},"paths":{}}`,
+			expected: `{"openapi":"3.0.0","info":{"title":"Demo","version":"1.0","x-one":"current"},"paths":{}}`,
 		},
 	} {
-		t.Run(tc.format+" baselines", func(t *testing.T) {
+		t.Run(tc.format+" baseline", func(t *testing.T) {
 			input := writeFile(tc.format+".json", tc.input)
 			rules := writeFile(tc.format+"-rules.json", `{}`)
 			first := writeFile(tc.format+"-first.json", tc.first)
-			second := writeFile(tc.format+"-second.json", tc.second)
-			output, err := exec.Command(executable, "-f", tc.format, "-i", input, "-r", rules, "-b", first, "--baseline", second).CombinedOutput()
+			output, err := exec.Command(executable, "-f", tc.format, "-i", input, "-r", rules, "-b", first).CombinedOutput()
 			if err != nil {
 				t.Fatalf("CLI: %v\n%s", err, output)
 			}
