@@ -8,6 +8,7 @@ import (
 )
 
 func AssertDeepEquals(t *testing.T, expected any, found any) {
+	t.Helper()
 	if !reflect.DeepEqual(found, expected) {
 		t.Errorf("result does not match expected output\n  got:  %+v\n  want: %+v", found, expected)
 	}

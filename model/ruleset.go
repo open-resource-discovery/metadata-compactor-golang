@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/open-resource-discovery/metadata-compactor-golang/model/csn"
+	"github.com/open-resource-discovery/metadata-compactor-golang/model/edmx"
 	"github.com/open-resource-discovery/metadata-compactor-golang/model/oas"
 )
 
@@ -12,6 +13,7 @@ type Ruleset struct {
 	CreatedAt   time.Time `json:"created_at"`
 	Description string    `json:"description"`
 
-	CSN csn.CSNRuleset `json:"csn"`
-	OAS oas.OASRuleset `json:"oas"`
+	CSN  csn.CSNRuleset   `json:"csn"`
+	OAS  oas.OASRuleset   `json:"oas"`
+	EDMX edmx.EDMXRuleset `json:"edmx"`
 }

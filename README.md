@@ -4,7 +4,7 @@
 
 # Metadata Compactor Golang Library
 
-Compact metadata documents for AI-friendly exposure. The library supports [Core Schema Notation](https://sap.github.io/csn-interop-specification/) (CSN) JSON and [OpenAPI](https://spec.openapis.org/oas/latest.html) (OAS) JSON documents.
+Compact metadata documents for AI-friendly exposure. The library supports [Core Schema Notation](https://sap.github.io/csn-interop-specification/) (CSN) JSON, [OpenAPI](https://spec.openapis.org/oas/latest.html) (OAS) JSON, and EDMX XML. EDMX annotation filtering follows the Node implementation in [PR #5](https://github.tools.sap/I302705/metadata-compactor-ts/pull/5).
 
 For CSN documents, rulesets and optional baseline documents control which annotations and private properties remain, and whether custom types and association elements are preserved.
 
@@ -64,15 +64,15 @@ This creates a `metadata-compactor` executable in the current directory.
 ## Command-line usage
 
 ```text
-metadata-compactor -i <input.json> -r <rules.json> [-f <csn|oas>] [-b <baseline.json>] [-o <output.json>]
+metadata-compactor -i <input> -r <rules.json> [-f <csn|oas|edmx>] [-b <baseline>] [-o <output>]
 ```
 
 | Flag | Required | Description |
 | --- | --- | --- |
-| `-i`, `--input` | Yes | Path to the JSON document to compact. |
+| `-i`, `--input` | Yes | Path to the JSON or XML document to compact. |
 | `-r`, `--rules` | Yes | Path to the JSON rules file. |
-| `-f`, `--format` | No | Input format: `csn` (the default) or `oas`. |
-| `-b`, `--baseline` | No | Path to a baseline document of the selected format from which path-specific preservation rules are derived. |
+| `-f`, `--format` | No | Input format: `csn` (the default), `oas`, or `edmx`. |
+| `-b`, `--baseline` | No | Path to a baseline document of the selected format from which preservation rules are derived. Repeat for multiple baselines. |
 | `-o`, `--output` | No | Path for the compacted document. When omitted, the result is written to standard output. |
 
 For example, write the compacted document to a file:
@@ -152,7 +152,7 @@ go test -tags unit,integration ./...
 
 ## Rules file
 
-The rules file is a versioned compaction configuration with format-specific sections. A [JSON Schema](resources/schemas/ruleset.schema.json) is available for the CSN configuration.
+The rules file is a versioned configuration organized by document format. Its structure is defined by [the JSON Schema](resources/schemas/ruleset.schema.json). Include the format block needed by your document.
 
 ```json
 {
@@ -235,6 +235,56 @@ The Go API selects OpenAPI processing with `OAS`:
 ```go
 result := processor.Process(metadata_compactor_golang.OAS, input, baseline)
 ```
+
+## EDMX usage
+
+```sh
+./metadata-compactor -f edmx -i metadata.edmx -r rules.json -b baseline.edmx -o compacted.edmx
+```
+
+Input, output, and baselines are XML. Rules are JSON. Repeat `-b` or `--baseline` for multiple baselines. `-f` / `--format` selects `csn`, `oas`, or `edmx`; the existing CSN default remains. All three formats support baselines.
+
+```json
+{
+  "name": "EDMX descriptions",
+  "version": "1.0",
+  "created_at": "2026-11-02T00:00:00Z",
+  "description": "Keep descriptions and Common annotations",
+  "edmx": {
+    "preserve": ["Core.Description", "Common.*"]
+  }
+}
+```
+
+EDMX rules match literal XML `Term` values. `Core.Description` matches that exact term; `Common.*` matches terms starting with `Common.`. Do not add the CSN `@` prefix. Configured term rules apply to every qualifier. A baseline preserves a term only on the same resolved target and effective qualifier, keeping the current input value. An unqualified baseline preserves only unqualified annotations. Empty or omitted preserve lists remove annotations unless a baseline matches.
+
+The processor recursively filters nested annotations, retains empty `Annotations` wrappers, and removes comments and whitespace-only text, matching Node PR #5. It accepts standalone schema XML and selects annotations by local name without validating the CSDL namespace or version. Model declarations, structural attributes, and non-annotation values remain. Full CSDL validation and alias/reference resolution are excluded.
+
+### Go library example
+
+```go
+ruleset := &model.Ruleset{
+    EDMX: edmx.EDMXRuleset{
+        Rules: []edmx.EDMXRule{
+            {Kind: "exact", Value: "Core.Description"},
+            {Kind: "glob", Value: "Common.*"},
+        },
+    },
+}
+processor := metadata_compactor_golang.Create(ruleset)
+output, err := processor.ProcessE(metadata_compactor_golang.EDMX, inputXML, baselineXML)
+if err != nil {
+    // Handle malformed input or baseline XML.
+    return err
+}
+// Use output: the compacted XML string.
+```
+
+Import `github.com/open-resource-discovery/metadata-compactor-golang` and its `model` and `model/edmx` packages. You can also decode the JSON rules file into `model.Ruleset` with `encoding/json`. The processor keeps an independent copy of configured rules. `Process(format, input, baselines...)` retains the existing panic-on-error API; `ProcessE` returns EDMX errors explicitly. The CLI uses `ProcessE` and writes output only after processing succeeds.
+
+XML support covers XML 1.0 in UTF-8; custom DTD entities are not expanded. Attribute tabs and line breaks are preserved even where the Node serializer loses them. `ProcessE` retains the existing JSON processor panic behavior for malformed CSN or OAS.
+
+See the [EDMX test coverage and Node reference details](internal/processor/edmx/testdata/README.md). Tests use outputs from the reviewed Node PR #5 modules and allow XML formatting differences.
 
 ## Support, Feedback, Contributing
 

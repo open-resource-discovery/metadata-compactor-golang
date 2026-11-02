@@ -7,8 +7,10 @@ import (
 	"testing"
 
 	"github.com/ohler55/ojg/oj"
+	"github.com/open-resource-discovery/metadata-compactor-golang/internal/common/testutils"
 	"github.com/open-resource-discovery/metadata-compactor-golang/model"
 	"github.com/open-resource-discovery/metadata-compactor-golang/model/csn"
+	"github.com/open-resource-discovery/metadata-compactor-golang/model/edmx"
 )
 
 func TestProcessorProcessCSN(t *testing.T) {
@@ -69,6 +71,40 @@ func TestProcessorProcessCSNWithBaseline(t *testing.T) {
 	if _, exists := entity["@Remove"]; exists {
 		t.Error("annotation absent from baseline was retained")
 	}
+}
+
+func TestProcessorProcessOASWithBaseline(t *testing.T) {
+	processor := Create(&model.Ruleset{})
+	input := `{"openapi":"3.0.0","info":{"title":"Demo","version":"1.0","x-keep":"current","x-remove":true},"paths":{}}`
+	baseline := `{"info":{"x-keep":"old"}}`
+	expected := `{"openapi":"3.0.0","info":{"title":"Demo","version":"1.0","x-keep":"current"},"paths":{}}`
+	result, err := processor.ProcessE(OAS, input, baseline)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testutils.AssertDeepEquals(t, oj.MustParseString(expected), oj.MustParseString(result))
+}
+
+func TestProcessorProcessEDMX(t *testing.T) {
+	processor := Create(&model.Ruleset{
+		EDMX: edmx.EDMXRuleset{Rules: []edmx.EDMXRule{{Kind: "exact", Value: "Global"}}},
+	})
+	input := `<Schema Namespace="Demo"><EntityType Name="Product"><Annotation Term="Global"/><Annotation Term="Baseline" String="current"/><Annotation Term="Remove"/></EntityType></Schema>`
+	baseline := `<Schema><Annotations Target="Demo.Product"><Annotation Term="Baseline" String="old"/></Annotations></Schema>`
+	expected := `<Schema Namespace="Demo"><EntityType Name="Product"><Annotation Term="Global"/><Annotation Term="Baseline" String="current"/></EntityType></Schema>`
+	testutils.AssertXMLEquals(t, expected, processor.Process(EDMX, input, baseline))
+}
+
+func TestProcessorProcessEEDMXReturnsErrors(t *testing.T) {
+	output, err := Create(&model.Ruleset{}).ProcessE(EDMX, "<unclosed>")
+	if err == nil || output != "" {
+		t.Fatalf("expected error without partial output, got %q, %v", output, err)
+	}
+}
+
+func TestProcessorProcessEDMXPanicsOnError(t *testing.T) {
+	defer testutils.AssertPanics(t, "Process should panic on invalid XML")
+	Create(&model.Ruleset{}).Process(EDMX, "<unclosed>")
 }
 
 func TestProcessorProcessPanicsForUnsupportedFormat(t *testing.T) {

@@ -1,0 +1,1 @@
+<Schema Namespace="Demo"><Annotations Target="Demo.Run(Collection(Demo.Product))"><Annotation Term="V.Outer" Qualifier="Kept"/><Annotation Term="V.Outer" Qualifier="Other"/></Annotations><Annotations Target="Demo.Run(Collection(Demo.Product))/@V.Outer#Kept"><Annotation Term="V.Inner"/></Annotations></Schema>

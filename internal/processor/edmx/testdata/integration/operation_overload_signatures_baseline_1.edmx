@@ -1,0 +1,1 @@
+<Schema><Annotations Target="Demo.Create(Demo.Product)"><Annotation Term="Operation.Term"/></Annotations><Annotations Target="Demo.Create(Demo.Product)/input"><Annotation Term="Parameter.Term"/></Annotations><Annotations Target="Demo.Create(Demo.Product)/$ReturnType"><Annotation Term="Return.Term"/></Annotations></Schema>

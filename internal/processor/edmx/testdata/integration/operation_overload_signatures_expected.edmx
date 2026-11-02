@@ -1,0 +1,1 @@
+<Schema Namespace="Demo"><Action IsBound="true" Name="Create"><Parameter Name="input" Type="Demo.Product"><Annotation Term="Parameter.Term"/></Parameter><ReturnType Type="Demo.Product"><Annotation Term="Return.Term"/></ReturnType><Annotation Term="Operation.Term"/></Action><Action IsBound="true" Name="Create"><Parameter Name="input" Type="Edm.String"/></Action></Schema>
