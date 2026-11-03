@@ -4,6 +4,7 @@ package main
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -51,6 +52,7 @@ func TestOptionsBaseline(t *testing.T) {
 		{"baseline omitted", []string{"-i", "input.json", "-r", "rules.json"}, ""},
 		{"short baseline flag", []string{"-i", "input.json", "-r", "rules.json", "-b", "base.json"}, "base.json"},
 		{"long baseline flag", []string{"-i", "input.json", "-r", "rules.json", "--baseline", "base.json"}, "base.json"},
+		{"repeated flags select one baseline", []string{"-i", "input.json", "-r", "rules.json", "-b", "first.json", "--baseline", "last.json"}, "last.json"},
 	}
 
 	for _, tc := range tests {
@@ -84,4 +86,14 @@ func TestBaselines(t *testing.T) {
 			t.Errorf("baselines() = %q, want one baseline document", got)
 		}
 	})
+}
+
+func TestEDMXOptions(t *testing.T) {
+	got, err := options([]string{"-f", "EDMX", "-i", "metadata.edmx", "-r", "rules.json", "-b", "one.edmx"}, io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Format != metadatacompactor.EDMX || got.Baseline != "one.edmx" {
+		t.Fatalf("unexpected options: %#v", got)
+	}
 }

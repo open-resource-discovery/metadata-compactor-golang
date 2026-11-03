@@ -1,0 +1,1 @@
+<Schema Namespace="Demo"><Action Name="Run" IsBound="true"><Parameter Name="binding" Type="Collection(Demo.Product)"/><Parameter Name="query" Type="Edm.String"/><Annotation Term="V.Outer" Qualifier="Kept"><Annotation Term="V.Inner" String="keep"/></Annotation><Annotation Term="V.Outer" Qualifier="Other"><Annotation Term="V.Inner" String="remove"/></Annotation></Action></Schema>

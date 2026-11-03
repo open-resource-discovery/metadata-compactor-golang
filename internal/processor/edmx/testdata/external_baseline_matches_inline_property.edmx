@@ -1,0 +1,1 @@
+<Schema Namespace="Demo"><EntityType Name="Product"><Property Name="ID" Type="Edm.String"><Annotation Term="Field.Term" String="current"/></Property><Property Name="Other"><Annotation Term="Field.Term"/></Property></EntityType></Schema>

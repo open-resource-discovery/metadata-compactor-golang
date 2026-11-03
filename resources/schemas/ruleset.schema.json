@@ -9,8 +9,7 @@
     "name",
     "version",
     "created_at",
-    "description",
-    "csn"
+    "description"
   ],
   "properties": {
     "name": {
@@ -61,6 +60,34 @@
         "preserve": {
           "type": "array",
           "description": "Annotation and private-property allowlist. A trailing `.*` makes a rule a glob; all other values are exact rules.",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "edmx": {
+      "type": "object",
+      "description": "EDMX annotation compaction rules compatible with Node PR #5.",
+      "additionalProperties": false,
+      "properties": {
+        "preserve": {
+          "type": "array",
+          "description": "Literal XML Term allowlist. A trailing .* matches a term prefix. Configured term rules match every qualifier; baselines match exact targets and qualifiers.",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "oas": {
+      "type": "object",
+      "description": "OpenAPI Specification Extension compaction rules.",
+      "additionalProperties": false,
+      "properties": {
+        "preserve": {
+          "type": "array",
+          "description": "Specification Extension allowlist. A trailing -* matches a prefix; baselines add exact path-specific rules.",
           "items": {
             "type": "string"
           }

@@ -1,0 +1,1 @@
+<Schema Namespace="Demo"><EntityType Name="Product"><Annotation Term="One"/><Annotation Term="Two"/><Annotation Term="Three"/></EntityType></Schema>
