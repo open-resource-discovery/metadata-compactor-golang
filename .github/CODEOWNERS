@@ -1,0 +1,5 @@
+# Review owners for CI and build configuration.
+/.github/ @open-resource-discovery/metadata-compactor-admin
+/renovate.json @open-resource-discovery/metadata-compactor-admin
+/go.mod @open-resource-discovery/metadata-compactor-admin
+/go.sum @open-resource-discovery/metadata-compactor-admin
